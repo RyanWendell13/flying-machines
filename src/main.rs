@@ -1,26 +1,10 @@
+mod machine;
+
+use machine::Machine;
 use rand::{Rng};
 use std::{time::{Duration}, thread};
 
-#[derive(Debug, Clone, PartialEq)]
-struct Machine{
-
-    //0 = none, -1 = left, 1 = right
-    instructions:Vec<i8>,
-    // 0 = right, 1 = down, 2 = left, 3 = up 
-    heading: i8,
-    position: [i32; 2],
-    dead: bool
-}
-impl Machine{
-    fn new(new_instruct: Vec<i8>, new_pos: [i32; 2]) -> Machine{
-        Machine { instructions: new_instruct, heading: 0, position: new_pos, dead: false}
-    }
-}
-
-
 fn main() {
-
-    
     // i < 0 = 3 i > 3 = 0
     let mut machines:Vec<Machine>;
 
@@ -60,9 +44,8 @@ fn main() {
 
         machines = new_generation(&best, pop_num, [2,10], 7);
         generation+=1;
-        let mut i = 0;
         while all_dead(&machines) == false {
-            let result = move_machines(map, &mut machines, i, &mut goal_completed);
+            let result = move_machines(map, &mut machines, &mut goal_completed);
             println!("\x1b[2J");
             println!("{}, Generation: {}",machines.len(), generation);
             print_map(&machines, map);
@@ -75,7 +58,6 @@ fn main() {
                 break;
             }
             else{
-                i+=1;
                 thread::sleep(Duration::from_millis(25));
             }
         }
@@ -162,7 +144,7 @@ fn new_generation(best:& Vec<i8>, pop_num: i32, pos:[i32;2], mutations: i32) -> 
             match r {
                 0 =>{
                     let length = instruction.len();
-                    instruction[rng.gen_range(length/2..length)] = rng.gen_range(-1..2);
+                    instruction[rng.gen_range(0..length)] = rng.gen_range(-1..2);
                 }
                 1 =>{
                     instruction.push(rng.gen_range(-1..2))
@@ -177,50 +159,21 @@ fn new_generation(best:& Vec<i8>, pop_num: i32, pos:[i32;2], mutations: i32) -> 
     return new_machines
 }
 
-fn move_machines(map: [[i32; 61];21], machines: &mut Vec<Machine>, i: usize, goal_completed: &mut bool) -> Option<Machine> {
+fn move_machines(map: [[i32; 61];21], machines: &mut Vec<Machine>, goal_completed: &mut bool) -> Option<Machine> {
     for m in machines {
-        if m.instructions.len() <= i {
-            m.dead = true
-        }
-        if m.dead == false {
-                m.heading -= m.instructions[i];
-                if  m.heading > 3{
-                    m.heading = 0;
+        if m.dead == false{
+            m.move_machine();
+            match map[m.position[1] as usize][m.position[0] as usize] {
+                1 =>{
+                    m.dead = true;
                 }
-                else if m.heading < 0 {
-                    m.heading = 3;
-                } 
-
-                match m.heading {
-                    0 => {
-                        m.position[0] += 1;
-                    }
-                    1 => {
-                        m.position[1] += 1;
-                    }
-                    2 => {
-                        m.position[0] -= 1;
-                    }
-                    3 => {
-                        m.position[1] -= 1;
-                    }
-                    _ => {
-
-                    }
+                3 =>{
+                    *goal_completed = true;
+                    return Some(m.clone());
                 }
+                _ =>{
 
-                match map[m.position[1] as usize][m.position[0] as usize] {
-                    1 =>{
-                        m.dead = true;
-                    }
-                    3 =>{
-                        *goal_completed = true;
-                        return Some(m.clone());
-                    }
-                    _ =>{
-
-                    }
-                
+                }
             }
         }
     }
