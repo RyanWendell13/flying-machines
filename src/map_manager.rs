@@ -2,7 +2,7 @@ extern crate regex;
 
 use std::fs::{File, self};
 use std::path::{Path};
-use std::io::{Write, Read};
+use std::io::{Write};
 use regex::Regex;
 
 

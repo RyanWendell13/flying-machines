@@ -78,17 +78,23 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
         main_menu(map, map_selected)
     }
     if (input == "2") {
-        input = String::new();
-        print!("Enter The Map's Name: ");
-        io::stdin().read_line(&mut input).expect("error");
-        input = String::new();
+        let mut name = String::new();
+        let mut length = String::new();
+        let mut height = String::new();
+        println!("Enter The Map's Name: ");
+        io::stdin().read_line(&mut name).expect("error");
 
-        print!("Enter The Length");
-        io::stdin().read_line(&mut input).expect("error");
         input = String::new();
+        println!("Enter The Length: ");
+        io::stdin().read_line(&mut length).expect("error");
 
-        print!("Enter The Height");
-        io::stdin().read_line(&mut input).expect("error");
+        input = String::new();
+        println!("Enter The Height: ");
+        io::stdin().read_line(&mut height).expect("error");
+
+        map_manager::generate_map_file(name.trim(), length.trim().parse().unwrap(), height.trim().parse().unwrap());
+        println!("\x1b[2J");
+        mapping_menu(map, map_selected)
 
     }
     if (input == "3") {
@@ -139,7 +145,7 @@ fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
                 mapping_menu(map, map_selected);
             }
             else{
-                thread::sleep(Duration::from_millis(25));
+                thread::sleep(Duration::from_millis(50));
             }
         }
         best = find_best(&mut machines, map[0].len() as i32);    
