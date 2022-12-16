@@ -9,6 +9,7 @@ use regex::Regex;
 
 pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
     let path = format!("maps/{}",file_name);
+    println!("{} Exists?: {}",path, Path::new(&path).exists());
     // let mut file = if Path::new(&path).exists(){
     //     File::options().append(true).open(path).expect("File Cannot Be Opened")
     //     } 
@@ -29,11 +30,10 @@ pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
 
     let regular_expression = Regex::new(r"\d+").unwrap();
     for i in regular_expression.captures_iter(&file_contents) {
-        
-        if x_size == None{
+        if (x_size == None){
             x_size = Some(i[0].parse::<i32>().unwrap());
         }
-        else if y_size == None{
+        else if (y_size == None){
             y_size = Some(i[0].parse::<i32>().unwrap());
         }
         else {
@@ -55,7 +55,7 @@ pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
 
 pub fn generate_map_file(file_name: &str, x_size:u32, y_size:u32)->File{
     let path = "maps/".to_owned()+file_name;
-    let mut file = if Path::new(&path).exists(){
+    let mut file = if (Path::new(&path).exists()){
             File::options().append(true).open(path).expect("File Cannot Be Opened")
         } 
         else{

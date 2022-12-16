@@ -4,60 +4,154 @@ mod map_manager;
 use machine::Machine;
 use rand::{Rng};
 use std::{time::{Duration}, thread};
-use std::io::prelude::*;
 use std::io;
 
 fn main() {
+    let mut map_selected: bool = false;
+    let mut map:Vec<Vec<i32>> = Vec::new();
+    // map = map_manager::read_map_from_file("Map");
+    main_menu(&mut map, &mut map_selected);
+}
+
+fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
+    let mut input = String::new();
+
+    println!("MAIN MENU");
+    println!("1. Run Simulation");
+    println!("2. Choose/Create Maps");
+    println!("3. Settings");
+    println!("4. Help");
+    println!("Enter Option: ");
+    io::stdin().read_line(&mut input).expect("error");
+    println!("\x1b[2J");
+    input = input.trim().to_string();
+    if(input == "1"){
+        if(*map_selected == false){
+            main_menu(map,map_selected);
+        }
+        else {
+            run_simulation(map, map_selected);
+        }
+    }
+
+    if(input == "2"){
+        println!("Entering Two");
+        mapping_menu(map, map_selected);
+
+    }
+
+    if(input == "4"){
+        println!("To run a simulation a map must be selected. Once returned to the main menu select option 2");
+        println!("If you want to create a new custom map select 3. And follow the instructions. If you want to use a preexisting map select option 1");
+        println!("Enter the name of the map you want to use. Once a map is selected you can run the simulation by entering 1 on the main menu.");
+        println!("Enter Any Character To Return: ");
+        io::stdin().read_line(&mut input).expect("error");
+        println!("\x1b[2J");
+        main();
+    }
+    
+}
+
+fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
+    let mut input = String::new();
 
 
-    //1 = wall, spawn = 2, goal = 3 
+    println!("MAPPING MENU");
+    println!("1. Select Map");
+    println!("2. Create Map");
+    println!("3. How To Create And Edit Maps");
+    println!("4. Return To Main Menu");
+    println!("Enter Option: ");
+    io::stdin().read_line(&mut input).expect("error");
+    println!("\x1b[2J");
+    input = input.trim().to_string();
     
 
+    if (input == "1") {
+        input = String::new();
+        println!("Enter The Map's Name: ");
+        io::stdin().read_line(&mut input).expect("error");
+        println!("\x1b[2J");
+        println!("{}", input.trim());
+        *map = map_manager::read_map_from_file(input.trim());
+        *map_selected = true;
+        main_menu(map, map_selected)
+    }
+    if (input == "2") {
+        input = String::new();
+        print!("Enter The Map's Name: ");
+        io::stdin().read_line(&mut input).expect("error");
+        input = String::new();
+
+        print!("Enter The Length");
+        io::stdin().read_line(&mut input).expect("error");
+        input = String::new();
+
+        print!("Enter The Height");
+        io::stdin().read_line(&mut input).expect("error");
+
+    }
+    if (input == "3") {
+        input = String::new();
+        println!("To create a map simple select option 2 in the map menu.");
+        println!("Follow to create map file. To edit the map after it is created.");
+        println!("Find the file in the maps folder, and open it in a text editor. ");
+        println!("0 = empty space, 1 = wall, 2 = start position, 3 = goal");
+        println!("Simply swap out the number to modify the map.");
+        println!("For best result, keep the preset walls made of 1's and 3's.");
+        println!("Add one 2 or start position to the map, and place walls internally as you see fit.");
+        print!("Enter Any Character To Return: ");
+        io::stdin().read_line(&mut input).expect("error");
+        println!("\x1b[2J");
+        mapping_menu(map, map_selected);
+    }
+
+    if (input == "4"){
+        main_menu(map, map_selected);
+    }
+}
+
+fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
+    let mut input = String::new();
     let mut machines:Vec<Machine>;
     let pop_num = 300;
     let mut best = vec![0];
     let mut goal_completed = false;
     let mut generation = 0;
 
-    // let mut input = String::new();
-
-    // io::stdin().read_line(&mut input).expect("error");
-
-    let map:Vec<Vec<i32>> = map_manager::read_map_from_file("Map");
-
-    while goal_completed == false {
+    while (goal_completed == false) {
 
         machines = new_generation(&best, pop_num, [2,10], 7);
         generation+=1;
-        while all_dead(&machines) == false {
+        while (all_dead(&machines) == false) {
             let result = move_machines(&map, &mut machines, &mut goal_completed);
             println!("\x1b[2J");
             println!("{}, Generation: {}",machines.len(), generation);
             print_map(&machines, &map);
-            if result != None{
+            if (result != None){
                 let res = result.unwrap();
                 println!("{:?}", res);
                 println!("Path Length: {:?}", res.instructions.len());
                 println!("Generation: {}", generation);
-                println!("{}", goal_completed);
-                break;
+                println!("Enter Any Character To Return: ");
+                io::stdin().read_line(&mut input).expect("error");
+                println!("\x1b[2J");
+                mapping_menu(map, map_selected);
             }
             else{
                 thread::sleep(Duration::from_millis(25));
             }
         }
-        best = find_best(&mut machines, map[0].len() as i32);
-
+        best = find_best(&mut machines, map[0].len() as i32);    
     }
 }
-
 
 fn print_map(machines: &Vec<Machine>, map: &Vec<Vec<i32>>){
     for i in 0..map.len() {
         for j in 0..map[i].len() {
             let mut is_machine = false;
             for m in machines {
-                if m.position == [j as i32,i as i32]{
+                if (m.position == [j as i32,i as i32]){
                     is_machine = true;
                     match m.heading {
                         0 => {
@@ -78,17 +172,17 @@ fn print_map(machines: &Vec<Machine>, map: &Vec<Vec<i32>>){
 
                 }
             }
-            if is_machine == false {
-                if map[i][j] == 0 {
+            if (is_machine == false) {
+                if (map[i][j] == 0) {
                     print!(" ");
                 }
-                else if map[i][j] == 1 {
+                else if (map[i][j] == 1) {
                     print!("#");
                 }
-                else if map[i][j] == 2 {
+                else if (map[i][j] == 2) {
                     print!("X");
                 }
-                else if map[i][j] == 3 {
+                else if (map[i][j] == 3) {
                     print!("$");
                 }
             }
@@ -100,7 +194,7 @@ fn print_map(machines: &Vec<Machine>, map: &Vec<Vec<i32>>){
 
 fn all_dead(machines: &Vec<Machine>) -> bool {
     for m in machines {
-        if m.dead == false {
+        if (m.dead == false) {
             return false;
         }
     }
@@ -111,7 +205,7 @@ fn find_best(machines: &mut Vec<Machine>, x_size: i32) -> Vec<i8> {
 
     let mut best = 0;
     for i in 0..machines.len(){
-        if (x_size - machines[best].position[0]) as f64/((machines[best].instructions.len() as f64)/1.25)  >  (x_size - machines[i].position[0]) as f64/(machines[i].instructions.len() as f64/1.25)  {
+        if ((x_size - machines[best].position[0]) as f64/((machines[best].instructions.len() as f64)/1.25)  >  (x_size - machines[i].position[0]) as f64/(machines[i].instructions.len() as f64/1.25))  {
             best = i
         }
     }
@@ -146,7 +240,7 @@ fn new_generation(best:& Vec<i8>, pop_num: i32, pos:[i32;2], mutations: i32) -> 
 
 fn move_machines(map: &Vec<Vec<i32>>, machines: &mut Vec<Machine>, goal_completed: &mut bool) -> Option<Machine> {
     for m in machines {
-        if m.dead == false{
+        if (m.dead == false){
             m.move_machine();
             match map[m.position[1] as usize][m.position[0] as usize] {
                 1 =>{
