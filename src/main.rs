@@ -5,15 +5,17 @@ use machine::Machine;
 use rand::{Rng};
 use std::{time::{Duration}, thread};
 use std::io;
+use std::fs;
 
 fn main() {
+    println!("\x1b[2J");
     let mut map_selected: bool = false;
     let mut map:Vec<Vec<i32>> = Vec::new();
-    // map = map_manager::read_map_from_file("Map");
-    main_menu(&mut map, &mut map_selected);
+    let mut spawn: [i32; 2] = [0,0];
+    main_menu(&mut map, &mut map_selected, &mut spawn);
 }
 
-fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
+fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2]){
     let mut input = String::new();
 
     println!("MAIN MENU");
@@ -27,16 +29,16 @@ fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
     input = input.trim().to_string();
     if(input == "1"){
         if(*map_selected == false){
-            main_menu(map,map_selected);
+            main_menu(map,map_selected, spawn);
         }
         else {
-            run_simulation(map, map_selected);
+            run_simulation(map, map_selected, spawn);
         }
     }
 
     if(input == "2"){
         println!("Entering Two");
-        mapping_menu(map, map_selected);
+        mapping_menu(map, map_selected, spawn);
 
     }
 
@@ -52,7 +54,7 @@ fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
     
 }
 
-fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
+fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2]){
     let mut input = String::new();
 
 
@@ -69,13 +71,20 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
 
     if (input == "1") {
         input = String::new();
+        println!("Names");
+        for file in fs::read_dir("./maps").unwrap() {
+            println!("- {}", file.unwrap().file_name().into_string().unwrap());
+        }
+
         println!("Enter The Map's Name: ");
         io::stdin().read_line(&mut input).expect("error");
         println!("\x1b[2J");
         println!("{}", input.trim());
-        *map = map_manager::read_map_from_file(input.trim());
+        let result = map_manager::read_map_from_file(input.trim());
+        *map = result.0;
+        *spawn = result.1;
         *map_selected = true;
-        main_menu(map, map_selected)
+        main_menu(map, map_selected,spawn)
     }
     if (input == "2") {
         let mut name = String::new();
@@ -94,7 +103,7 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
 
         map_manager::generate_map_file(name.trim(), length.trim().parse().unwrap(), height.trim().parse().unwrap());
         println!("\x1b[2J");
-        mapping_menu(map, map_selected)
+        mapping_menu(map, map_selected, spawn)
 
     }
     if (input == "3") {
@@ -109,15 +118,18 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
         print!("Enter Any Character To Return: ");
         io::stdin().read_line(&mut input).expect("error");
         println!("\x1b[2J");
-        mapping_menu(map, map_selected);
+        mapping_menu(map, map_selected, spawn);
     }
 
     if (input == "4"){
-        main_menu(map, map_selected);
+        main_menu(map, map_selected,spawn);
     }
 }
 
-fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
+
+
+
+fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2]){
     let mut input = String::new();
     let mut machines:Vec<Machine>;
     let pop_num = 300;
@@ -127,7 +139,7 @@ fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
 
     while (goal_completed == false) {
 
-        machines = new_generation(&best, pop_num, [2,10], 7);
+        machines = new_generation(&best, pop_num, *spawn, 7);
         generation+=1;
         while (all_dead(&machines) == false) {
             let result = move_machines(&map, &mut machines, &mut goal_completed);
@@ -142,7 +154,7 @@ fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool){
                 println!("Enter Any Character To Return: ");
                 io::stdin().read_line(&mut input).expect("error");
                 println!("\x1b[2J");
-                mapping_menu(map, map_selected);
+                mapping_menu(map, map_selected, spawn);
             }
             else{
                 thread::sleep(Duration::from_millis(50));

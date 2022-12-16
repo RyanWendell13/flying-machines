@@ -7,7 +7,7 @@ use regex::Regex;
 
 
 
-pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
+pub fn read_map_from_file(file_name: &str) -> (Vec<Vec<i32>>, [i32;2]){
     let path = format!("maps/{}",file_name);
     println!("{} Exists?: {}",path, Path::new(&path).exists());
     // let mut file = if Path::new(&path).exists(){
@@ -26,7 +26,10 @@ pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
     let mut x_size: Option<i32> = None;
     let mut y_size: Option<i32> = None;
 
-    let mut row_index = 0;
+    let mut row_index: i32 = 0;
+    let mut column_index: i32 = 0;
+
+    let mut spawn: [i32; 2] = [0,0];
 
     let regular_expression = Regex::new(r"\d+").unwrap();
     for i in regular_expression.captures_iter(&file_contents) {
@@ -42,7 +45,11 @@ pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
             if row_index >= x_size.unwrap() {
                 row_index = 0;
                 map.push(row);
+                column_index+=1;
                 row = Vec::new();
+            }
+            if(i[0].parse::<i32>().unwrap() == 2){
+                spawn = [row_index, column_index]
             }
         }
     }
@@ -50,7 +57,7 @@ pub fn read_map_from_file(file_name: &str) -> Vec<Vec<i32>>{
     // for i in 0..map {
         
     // }
-    return  map;
+    return  (map, spawn);
 }
 
 pub fn generate_map_file(file_name: &str, x_size:u32, y_size:u32)->File{
