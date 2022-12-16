@@ -5,18 +5,8 @@ use std::path::{Path};
 use std::io::{Write};
 use regex::Regex;
 
-
-
 pub fn read_map_from_file(file_name: &str) -> (Vec<Vec<i32>>, [i32;2]){
     let path = format!("maps/{}",file_name);
-    println!("{} Exists?: {}",path, Path::new(&path).exists());
-    // let mut file = if Path::new(&path).exists(){
-    //     File::options().append(true).open(path).expect("File Cannot Be Opened")
-    //     } 
-    //     else{
-    //         generate_map_file(file_name, 100, 100)
-    //     };
-
     let file_contents = fs::read_to_string(path).unwrap();
 
     let mut map:Vec<Vec<i32>> = Vec::new();
@@ -90,11 +80,11 @@ pub fn generate_map_file(file_name: &str, x_size:u32, y_size:u32)->File{
 
     let file_contents = format!("size({},{})\n{}", x_size, y_size, map);
     
-    file.write_all(file_contents.as_bytes());
+    file.write_all(file_contents.as_bytes()).unwrap();
 
     return file;
 }
 
 pub fn delete_map_file(file_name:String){
-
+    fs::remove_file(file_name).unwrap();
 }

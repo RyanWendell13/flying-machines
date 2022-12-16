@@ -1,7 +1,9 @@
-mod machine;
 mod map_manager;
+mod machine;
+mod settings;
 
 use machine::Machine;
+use settings::Settings;
 use rand::{Rng};
 use std::{time::{Duration}, thread};
 use std::io;
@@ -12,10 +14,11 @@ fn main() {
     let mut map_selected: bool = false;
     let mut map:Vec<Vec<i32>> = Vec::new();
     let mut spawn: [i32; 2] = [0,0];
-    main_menu(&mut map, &mut map_selected, &mut spawn);
+    let mut settings = Settings::new_test(String::new(), 300, 7, 50);
+    main_menu(&mut map, &mut map_selected, &mut spawn, &mut settings);
 }
 
-fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2]){
+fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2], settings: &mut Settings){
     let mut input = String::new();
 
     println!("MAIN MENU");
@@ -29,20 +32,22 @@ fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;
     input = input.trim().to_string();
     if(input == "1"){
         if(*map_selected == false){
-            main_menu(map,map_selected, spawn);
+            main_menu(map,map_selected, spawn, settings);
         }
         else {
-            run_simulation(map, map_selected, spawn);
+            run_simulation(map, map_selected, spawn, settings);
         }
     }
 
     if(input == "2"){
-        println!("Entering Two");
-        mapping_menu(map, map_selected, spawn);
+        mapping_menu(map, map_selected, spawn, settings);
 
     }
+    if(input == "3"){
 
+    }
     if(input == "4"){
+        println!("INSTRUCTIONS");
         println!("To run a simulation a map must be selected. Once returned to the main menu select option 2");
         println!("If you want to create a new custom map select 3. And follow the instructions. If you want to use a preexisting map select option 1");
         println!("Enter the name of the map you want to use. Once a map is selected you can run the simulation by entering 1 on the main menu.");
@@ -54,15 +59,15 @@ fn main_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;
     
 }
 
-fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2]){
+fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2], settings: &mut Settings){
     let mut input = String::new();
-
 
     println!("MAPPING MENU");
     println!("1. Select Map");
     println!("2. Create Map");
-    println!("3. How To Create And Edit Maps");
-    println!("4. Return To Main Menu");
+    println!("3. Delete Map");
+    println!("4. How To Create And Edit Maps");
+    println!("5. Return To Main Menu");
     println!("Enter Option: ");
     io::stdin().read_line(&mut input).expect("error");
     println!("\x1b[2J");
@@ -71,6 +76,8 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i
 
     if (input == "1") {
         input = String::new();
+
+        println!("SELECT MAP");
         println!("Names");
         for file in fs::read_dir("./maps").unwrap() {
             println!("- {}", file.unwrap().file_name().into_string().unwrap());
@@ -79,14 +86,14 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i
         println!("Enter The Map's Name: ");
         io::stdin().read_line(&mut input).expect("error");
         println!("\x1b[2J");
-        println!("{}", input.trim());
         let result = map_manager::read_map_from_file(input.trim());
         *map = result.0;
         *spawn = result.1;
         *map_selected = true;
-        main_menu(map, map_selected,spawn)
+        main_menu(map, map_selected,spawn, settings)
     }
     if (input == "2") {
+        println!("CREATE MAP");
         let mut name = String::new();
         let mut length = String::new();
         let mut height = String::new();
@@ -103,11 +110,25 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i
 
         map_manager::generate_map_file(name.trim(), length.trim().parse().unwrap(), height.trim().parse().unwrap());
         println!("\x1b[2J");
-        mapping_menu(map, map_selected, spawn)
+        mapping_menu(map, map_selected, spawn, settings)
 
     }
-    if (input == "3") {
+    if(input == "3"){
         input = String::new();
+        println!("DELETE MAP");
+        println!("Names");
+        for file in fs::read_dir("./maps").unwrap() {
+            println!("- {}", file.unwrap().file_name().into_string().unwrap());
+        }
+        println!("Enter The Map's Name: ");
+        io::stdin().read_line(&mut input).expect("error");
+        println!("\x1b[2J");
+        map_manager::delete_map_file(input.trim().to_string());
+        main_menu(map, map_selected,spawn,settings)
+    }
+    if (input == "4") {
+        input = String::new();
+        println!("INSTRUCTIONS");
         println!("To create a map simple select option 2 in the map menu.");
         println!("Follow to create map file. To edit the map after it is created.");
         println!("Find the file in the maps folder, and open it in a text editor. ");
@@ -118,28 +139,27 @@ fn mapping_menu(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i
         print!("Enter Any Character To Return: ");
         io::stdin().read_line(&mut input).expect("error");
         println!("\x1b[2J");
-        mapping_menu(map, map_selected, spawn);
+        mapping_menu(map, map_selected, spawn, settings);
     }
 
-    if (input == "4"){
-        main_menu(map, map_selected,spawn);
+    if (input == "5"){
+        main_menu(map, map_selected,spawn, settings);
     }
 }
 
 
 
 
-fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2]){
+fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut [i32;2], settings: &mut Settings){
     let mut input = String::new();
     let mut machines:Vec<Machine>;
-    let pop_num = 300;
     let mut best = vec![0];
     let mut goal_completed = false;
     let mut generation = 0;
 
     while (goal_completed == false) {
 
-        machines = new_generation(&best, pop_num, *spawn, 7);
+        machines = new_generation(&best, settings.pop_num, *spawn, settings.mutations);
         generation+=1;
         while (all_dead(&machines) == false) {
             let result = move_machines(&map, &mut machines, &mut goal_completed);
@@ -154,10 +174,10 @@ fn run_simulation(map: &mut Vec<Vec<i32>>, map_selected: &mut bool, spawn: &mut 
                 println!("Enter Any Character To Return: ");
                 io::stdin().read_line(&mut input).expect("error");
                 println!("\x1b[2J");
-                mapping_menu(map, map_selected, spawn);
+                mapping_menu(map, map_selected, spawn, settings);
             }
             else{
-                thread::sleep(Duration::from_millis(50));
+                thread::sleep(Duration::from_millis(settings.delay));
             }
         }
         best = find_best(&mut machines, map[0].len() as i32);    
